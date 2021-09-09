@@ -1,184 +1,236 @@
-#include <Windows.h>
-#include <gl/gl.h>
-#pragma comment(lib, "opengl32.lib")
+#include <iostream>
+#include <windows.h>
+#include <gl/GL.h>
+#include <gl/GLU.h>
+#include <gl/glut.h>
 
-LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
-void EnableOpenGL(HWND hwnd, HDC*, HGLRC*);
-void DisableOpenGL(HWND, HDC, HGLRC);
+static HGLRC hRC;
+// Постоянный контекст рендеринга
+static HDC hDC;
+// Приватный контекст устройства GDI
+BOOL keys[256];
+// Массив для процедуры обработки клавиатуры
 
+GLvoid InitGL(GLsizei Width, GLsizei Height);
+GLvoid ReSizeGLScene(GLsizei Width, GLsizei Height);
+GLvoid DrawGLScene(GLvoid);
+LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-int WINAPI WinMain(HINSTANCE hInstance,
-	HINSTANCE hPrevInstance,
-	LPSTR lpCmdLine, int nCmdShow)
+int WINAPI WinMain(HINSTANCE hInstance,	HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-	WNDCLASSEX wcex;
-	HWND hwnd;
-	HDC hDC;
-	HGLRC hRC;
-	MSG msg;
-	BOOL bQuit = FALSE;
-	float theta = 0.0f;
+	MSG			msg;	// Структура сообщения Windows
+	WNDCLASS	wc; 	// Структура класса Windows для установки типа окна
+	HWND		hWnd;	// Сохранение дескриптора окна
 
-	/* register window class */
-	wcex.cbSize = sizeof(WNDCLASSEX);
-	wcex.style = CS_OWNDC;
-	wcex.lpfnWndProc = WindowProc;
-	wcex.cbClsExtra = 0;
-	wcex.cbWndExtra = 0;
-	wcex.hInstance = hInstance;
-	wcex.hIcon = LoadIcon(NULL, IDI_APPLICATION);
-	wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wcex.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
-	wcex.lpszMenuName = NULL;
-	wcex.lpszClassName = L"GLSample";
-	wcex.hIconSm = LoadIcon(NULL, IDI_APPLICATION);;
+	wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+	wc.lpfnWndProc = (WNDPROC)WndProc;
+	wc.cbClsExtra = 0;
+	wc.cbWndExtra = 0;
+	wc.hInstance = hInstance;
+	wc.hIcon = NULL;
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hbrBackground = NULL;
+	wc.lpszMenuName = NULL;
+	wc.lpszClassName = L"OpenGL WinClass";
 
+	if (!RegisterClass(&wc))
+	{
+		MessageBox(0, L"Ошибка регистрации класса окна.",
+			L"Ошибка", MB_OK | MB_ICONERROR);
+		return FALSE;
+	}
 
-	if (!RegisterClassEx(&wcex))
-		return 0;
-
-	/* create main window */
-	hwnd = CreateWindowEx(0,
-		L"GLSample",
-		L"OpenGL Sample",
-		WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT,
-		CW_USEDEFAULT,
-		640,
-		640,
+	hWnd = CreateWindow(
+		L"OpenGL WinClass",
+		L"Это минимальная программа OpenGL",
+		// Заголовок вверху окна
+		WS_CLIPCHILDREN |
+		WS_CLIPSIBLINGS,
+		0, 0,		// Позиция окна на экране
+		720, 640,		// Ширина и высота окна
 		NULL,
 		NULL,
 		hInstance,
 		NULL);
 
-	ShowWindow(hwnd, nCmdShow);
-
-	/* enable OpenGL for the window */
-	EnableOpenGL(hwnd, &hDC, &hRC);
-
-	/* program main loop */
-	while (!bQuit)
+	if (!hWnd)
 	{
-		/* check for messages */
-		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		MessageBox(0, L"Ошибка создания окна.",
+			L"Ошибка", MB_OK | MB_ICONERROR);
+		return FALSE;
+	}
+
+	DEVMODE dmScreenSettings;	// Режим работы
+	memset(&dmScreenSettings, 0, sizeof(DEVMODE));
+	// Очистка для хранения установок
+	dmScreenSettings.dmSize = sizeof(DEVMODE);
+	// Размер структуры Devmode
+	dmScreenSettings.dmPelsWidth = 640;
+	// Ширина экрана
+	dmScreenSettings.dmPelsHeight = 480;
+	// Высота экрана
+	dmScreenSettings.dmFields = DM_PELSWIDTH |
+		DM_PELSHEIGHT;
+	// Режим Пикселя
+	//ChangeDisplaySettings(&dmScreenSettings, CDS_FULLSCREEN);
+	// Переключение в полный экран
+
+	ShowWindow(hWnd, SW_SHOW);
+	UpdateWindow(hWnd);
+	SetFocus(hWnd);
+
+	while (1)
+	{
+		// Обработка всех сообщений
+		while (PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE))
 		{
-			/* handle or dispatch messages */
-			if (msg.message == WM_QUIT)
-			{
-				bQuit = TRUE;
-			}
-			else
+			if (GetMessage(&msg, NULL, 0, 0))
 			{
 				TranslateMessage(&msg);
 				DispatchMessage(&msg);
 			}
+			else
+			{
+				return TRUE;
+			}
 		}
-		else
-		{
-			/* OpenGL animation code goes here */
-
-			glClearColor(0.0f, 0.0f, 0.0f, 0.0f); //цвет фона
-			glClear(GL_COLOR_BUFFER_BIT);	      //очистка экрана(только цвет с глколбуфбит)
-
-			//glPushMatrix();						  //матрица преобразований, ее сохранение
-			//glRotatef(theta, 0.0f, 0.0f, 1.0f);	  //поворот, 1 - угол, остальное - оси
-
-			//glBegin(GL_TRIANGLES);				  //функция для отрисовки типа (треугольник)
-
-			//glColor3f(1.0f, 0.0f, 0.0f);   glVertex2f(0.0f, 1.0f);		//цвет - положение
-			//glColor3f(0.0f, 1.0f, 0.0f);   glVertex2f(0.87f, -0.5f);
-			//glColor3f(0.0f, 0.0f, 1.0f);   glVertex2f(-0.87f, -0.5f);
-
-			//glEnd();							  //функция для отрисовки типа (треугольник) конец
-
-			//glPopMatrix();						  //вызов матрицы, текущая
-			glEnable(GL_POINT_SMOOTH);
-			glPointSize(11);
-			glBegin(GL_LINES);
-			glColor3f(0.0f, 1.0f, 1.0f); 
-			glVertex2f(0.87f, -0.5f);
-			glVertex2f(0.3f, -0.3f);
-			glEnd();
-
-			SwapBuffers(hDC);					  //пиупиу
-			theta += 1.0f;
-			Sleep(1);
-		}
-	}
-
-	/* shutdown OpenGL */
-	DisableOpenGL(hwnd, hDC, hRC);
-
-	/* destroy the window explicitly */
-	DestroyWindow(hwnd);
-
-	return msg.wParam;
-}
-
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	switch (uMsg)
-	{
-	case WM_CLOSE:
-		PostQuitMessage(0);
-		break;
-
-	case WM_DESTROY:
-		return 0;
-
-	case WM_KEYDOWN:
-	{
-		switch (wParam)
-		{
-		case VK_ESCAPE:
-			PostQuitMessage(0);
-			break;
-		}
-	}
-	break;
-
-	default:
-		return DefWindowProc(hwnd, uMsg, wParam, lParam);
+		DrawGLScene();		// Нарисовать сцену
+		SwapBuffers(hDC);	// Переключить буфер экрана
+		if (keys[VK_ESCAPE]) SendMessage(hWnd, WM_CLOSE, 0, 0);
+		if (keys[VK_CONTROL] && keys[0x46]) ChangeDisplaySettings(&dmScreenSettings, CDS_FULLSCREEN);
 	}
 
 	return 0;
 }
 
-void EnableOpenGL(HWND hwnd, HDC* hDC, HGLRC* hRC)
+GLvoid InitGL(GLsizei Width, GLsizei Height)	//Вызвать после создания окна GL
 {
-	PIXELFORMATDESCRIPTOR pfd;
-
-	int iFormat;
-
-	/* get the device context (DC) */
-	*hDC = GetDC(hwnd);
-
-	/* set the pixel format for the DC */
-	ZeroMemory(&pfd, sizeof(pfd));
-
-	pfd.nSize = sizeof(pfd);
-	pfd.nVersion = 1;
-	pfd.dwFlags = PFD_DRAW_TO_WINDOW |
-		PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-	pfd.iPixelType = PFD_TYPE_RGBA;
-	pfd.cColorBits = 24;
-	pfd.cDepthBits = 16;
-	pfd.iLayerType = PFD_MAIN_PLANE;
-
-	iFormat = ChoosePixelFormat(*hDC, &pfd);
-
-	SetPixelFormat(*hDC, iFormat, &pfd);
-
-	/* create and enable the render context (RC) */
-	*hRC = wglCreateContext(*hDC);
-
-	wglMakeCurrent(*hDC, *hRC);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	// Очистка экрана в черный цвет
 }
 
-void DisableOpenGL(HWND hwnd, HDC hDC, HGLRC hRC)
+GLvoid ReSizeGLScene(GLsizei Width, GLsizei Height)
 {
-	wglMakeCurrent(NULL, NULL);
-	wglDeleteContext(hRC);
-	ReleaseDC(hwnd, hDC);
+	if (Height == 0)
+		// Предотвращение деления на ноль, 
+		//если окно слишком мало
+		Height = 1;
+	glViewport(0, 0, Width, Height);
+	// Сброс текущей области вывода и
+	//перспективных преобразований
 }
 
+GLvoid DrawGLScene(GLvoid)
+{
+	glClear(GL_COLOR_BUFFER_BIT);
+	glEnable(GL_POINT_SMOOTH);
+	glPointSize(12);  //размер точки
+	glBegin(GL_POINTS);
+	glColor3d(1, 0, 0);
+	glVertex3d(-0.45, -0.4, 0); 	// первая точка
+	glColor3d(0, 1, 0);
+	glVertex3d(0.4, 0.4, 0);   	// вторая точка
+	glColor3d(0, 0, 1);
+	glVertex3d(-0.35, 0.4, 0); 	// третья точка
+	glEnd();
+}
+
+LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	RECT	Screen;
+	// используется позднее для размеров окна
+	GLuint	PixelFormat;
+	static	PIXELFORMATDESCRIPTOR pfd =
+	{
+		sizeof(PIXELFORMATDESCRIPTOR),	// Размер этой структуры
+		1,								// Номер версии 
+		PFD_DRAW_TO_WINDOW |			// Формат для Окна
+		PFD_SUPPORT_OPENGL |			// Формат для OpenGL
+		PFD_DOUBLEBUFFER,				// Формат для двойного буфера
+		PFD_TYPE_RGBA,					// Требуется RGBA формат
+		16,								// Выбор 16 бит глубины цвета
+		0, 0, 0, 0, 0, 0,				// Игнорирование цветовых битов 
+		0,								// нет буфера прозрачности
+		0,								// Сдвиговый бит игнорируется 
+		0,								// Нет буфера аккумуляции
+		0, 0, 0, 0,						// Биты аккумуляции игнорируются 
+		16,								// 16 битный Z-буфер (буфер глубины)  
+		0,								// Нет буфера трафарета
+		0,								// Нет вспомогательных буферов 
+		PFD_MAIN_PLANE,					// Главный слой рисования
+		0,								// Резерв 
+		0, 0, 0							// Маски слоя игнорируются 
+	};
+
+	switch (message)	// Тип сообщения
+	{
+	case WM_CREATE:
+		hDC = GetDC(hWnd);
+		// Получить контекст устройства для окна
+		PixelFormat = ChoosePixelFormat(hDC, &pfd);
+		// Найти ближайшее совпадение для формата пикселей
+		if (!PixelFormat)
+		{
+			MessageBox(0, L"Не найден подходящий формат пикселя.",
+				L"Ошибка", MB_OK | MB_ICONERROR);
+			PostQuitMessage(0);
+			// Это сообщение говорит, что
+			// программа должна завершиться
+			break;		// Предотвращение повтора кода
+		}
+		if (!SetPixelFormat(hDC, PixelFormat, &pfd))
+		{
+			MessageBox(0, L"Формат пикселя не установлен.",
+				L"Ошибка", MB_OK | MB_ICONERROR);
+			PostQuitMessage(0);
+			break;
+		}
+
+		hRC = wglCreateContext(hDC);
+		if (!hRC)
+		{
+			MessageBox(0, L"Контекст воспроизведения не создан.",
+				L"Ошибка", MB_OK | MB_ICONERROR);
+			PostQuitMessage(0);
+			break;
+		}
+
+		if (!wglMakeCurrent(hDC, hRC))
+		{
+			MessageBox(0, L"Невозможно активизировать GLRC.",
+				L"Ошибка", MB_OK | MB_ICONERROR);
+			PostQuitMessage(0);
+			break;
+		}
+
+		GetClientRect(hWnd, &Screen);
+		InitGL(Screen.right, Screen.bottom);
+		break;
+
+	case WM_DESTROY:
+	case WM_CLOSE:
+		ChangeDisplaySettings(NULL, 0);
+		wglMakeCurrent(hDC, NULL);
+		wglDeleteContext(hRC);
+		ReleaseDC(hWnd, hDC);
+		PostQuitMessage(0);
+		break;
+
+	case WM_KEYDOWN:
+		keys[wParam] = TRUE;
+		break;
+
+	case WM_KEYUP:
+		keys[wParam] = FALSE;
+		break;
+
+	case WM_SIZE:
+		ReSizeGLScene(LOWORD(lParam), HIWORD(lParam));
+		break;
+
+	default:
+		return (DefWindowProc(hWnd, message, wParam, lParam));
+	}
+
+	return (0);
+}
