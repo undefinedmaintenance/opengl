@@ -426,27 +426,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			MessageBox(0, L"Контекст воспроизведения не создан.",
 				L"Ошибка", MB_OK | MB_ICONERROR);
-			PostQuitMessage(0);
-			break;
-		}
-		if (!wglMakeCurrent(hDC, hRC))
-		{
-			MessageBox(0, L"Невозможно активизировать GLRC.",
-				L"Ошибка", MB_OK | MB_ICONERROR);
-			PostQuitMessage(0);
-			break;
-		}
-		GetClientRect(hWnd, &Screen);
-		InitGL(Screen.right, Screen.bottom);
-		break;
 
-	case WM_DESTROY:
-	case WM_CLOSE:
-		ChangeDisplaySettings(NULL, 0);
-		wglMakeCurrent(hDC, NULL);
-		wglDeleteContext(hRC);
-		ReleaseDC(hWnd, hDC);
-		PostQuitMessage(0);
 		break;
 
 	case WM_KEYDOWN:
