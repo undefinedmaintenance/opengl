@@ -4,6 +4,8 @@
 #include <gl/GL.h>
 #include <gl/GLU.h>
 #include <gl/glut.h>
+#define N 20
+#define COLORS 30
 
 static HGLRC hRC;
 // Постоянный контекст рендеринга
@@ -122,11 +124,6 @@ GLvoid ReSizeGLScene(GLsizei Width, GLsizei Height)
 	glViewport(0, 0, Width, Height); // Сброс текущей области вывода и перспективных преобразований
 }
 
-float randomCol(void)
-{
-	return static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-}
-
 double color(int pr)
 {
 	static double re[30];
@@ -142,233 +139,163 @@ double color(int pr)
 	return re[iteration++];
 }
 
+void arrayFill(GLfloat a[][3], GLfloat b[][3])
+{
+	int i = 0;
+	for (i = 0; i < 7; i++) {
+		a[i][0] = sin(6.28 / 7 * i);
+		a[i][1] = cos(6.28 / 7 * i);
+	}
+	a[7][0] = -0.913636;
+	a[7][1] = -0.657143;
+	a[8][0] = -0.745455;
+	a[8][1] = 0.074286;
+	a[9][0] = -0.577273;
+	a[9][1] = -0.657143;
+	a[10][0] = -0.454545;
+	a[10][1] = 0.074286;
+	a[11][0] = 0.340909;
+	a[11][1] = 0.074286;
+	a[12][0] = 0.340909;
+	a[12][1] = -0.657143;
+	a[13][0] = -0.454545;
+	a[13][1] = -0.657143;
+	a[14][0] = 0.522727;
+	a[14][1] = -0.291429;
+	a[15][0] = 0.943182;
+	a[15][1] = -0.291429;
+	a[16][0] = 0;
+	a[16][1] = 0;
+	a[17][0] = -1;
+	a[17][1] = 0;
+	a[18][0] = -0.5;
+	a[18][1] = -0.87;
+
+
+
+	for (int i = 0; i < COLORS; i++)
+	{
+		b[i][0] = color(30);
+		b[i][1] = color(30);
+		b[i][2] = color(30);
+	}
+}
+
 GLvoid DrawGLScene(int& scene)
 {
 	static int flag = 0;
 	srand(time(NULL));
 	glClear(GL_COLOR_BUFFER_BIT);
-	if (scene > 17)
-		scene = 0;
-	switch (scene) {
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_COLOR_ARRAY);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glLineWidth(5);
+	glMatrixMode(GL_MODELVIEW);
+	static GLfloat aVertex[N][3], aColor[COLORS][3];
+
+	if (!flag)
+	{
+		arrayFill(aVertex, aColor);
+		flag = 1;
+	}
+ 	glVertexPointer(3, GL_FLOAT, 0, aVertex);
+	glColorPointer(3, GL_FLOAT, 0, aColor);
+	switch (scene)
+	{
 	case 0:
-		glEnable(GL_POINT_SMOOTH);
-		glPointSize(12);  //размер точки
-		glBegin(GL_POINTS);
-		glColor3d(1, 0, 0);
-		for (int i = 0; i < 7; i++) {
-			glVertex3d(sin(6.28 / 7 * i) / 2, cos(6.28 / 7 * i) / 2, 0);
-		}
-		glEnd();
+		glLoadIdentity();
+		glDrawArrays(GL_POLYGON, 0, 7);
 		break;
 	case 1:
-		glEnable(GL_LINE_STIPPLE);
-		glLineWidth(22);
-		glLineStipple(1, 0x0FFF);
-		glBegin(GL_LINE_LOOP);
-		for (int i = 0; i < 7; i++) {
-			glVertex3d(sin(6.28 / 7 * i) / 2, cos(6.28 / 7 * i) / 2, 0); 	// первая точка
-		}
-		glLineStipple(1, 0x0AAA);
-		glDisable(GL_LINE_STIPPLE);
+		glBegin(GL_POLYGON);
+		glArrayElement(1);
+		glArrayElement(2);
+		glArrayElement(5);
+		glArrayElement(6);
 		glEnd();
-		glLineStipple(1, 0xFFFF);
+		glBegin(GL_POLYGON);
+		glArrayElement(0);
+		glArrayElement(6);
+		glArrayElement(3);
+		glArrayElement(2);
+		glEnd();
+		glBegin(GL_POLYGON);
+		glArrayElement(0);
+		glArrayElement(1);
+		glArrayElement(4);
+		glArrayElement(5);
+		glEnd();
+		glBegin(GL_POLYGON);
+		glArrayElement(6);
+		glArrayElement(1);
+		glArrayElement(3);
+		glArrayElement(4);
+		glEnd();
 		break;
 	case 2:
-		glEnable(GL_LINE_SMOOTH);
-		glLineWidth(12);  //размер точки
-		glBegin(GL_LINE_LOOP);
-		glColor3d(1, 0, 0);
-		for (int i = 0; i < 7; i++) {
-			glVertex3d(sin(6.28 / 7 * i) / 2, cos(6.28 / 7 * i) / 2, 0); 	// первая точка
-		}
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 7);
+		glBegin(GL_TRIANGLES);
+		glArrayElement(5);
+		glArrayElement(6);
+		glArrayElement(0);
 		glEnd();
 		break;
 	case 3:
-		glEnable(GL_LINE_SMOOTH);
-		glLineWidth(1);  //размер точки
-		glLineStipple(1, 0xFFFF);
-		glBegin(GL_LINE_STRIP);
-		glVertex3d(-0.814286, 0.523810, 0);
-		glVertex3d(-0.557143, -0.690476, 0);
-		glVertex3d(-0.328571, -0.071429, 0);
-		glVertex3d(0.171429, -0.071429, 0);
-		glVertex3d(0.057143, 0.738095, 0);
-		glVertex3d(0.914286, 0.738095, 0);
-		glVertex3d(0.171429, -0.904762, 0);
-		glEnd();
-		break;
-	case 4:
-		glBegin(GL_LINE_LOOP);
-		glVertex3d(-0.548571, 0.514286, 0);
-		glVertex3d(0.800000, 0.514286, 0);
-		glVertex3d(0.274286, 0.000000, 0);
-		glVertex3d(0.274286, -0.685714, 0);
-		glVertex3d(0.685714, -0.685714, 0);
-		glVertex3d(0.685714, -0.914286, 0);
-		glVertex3d(-0.354286, -0.914286, 0);
-		glVertex3d(0.057143, -0.342857, 0);
-		glEnd();
-		break;
-	case 5:
-		glBegin(GL_TRIANGLES);
-		glVertex3d(-0.042857, 0.404762, 0);
-		glVertex3d(-0.242857, 0.928571, 0);
-		glVertex3d(-0.042857, 0.404762, 0);
-		glColor3d(color(21), color(21), color(21));
-		glVertex3d(-0.242857, 0.928571, 0);
-		glVertex3d(0.685714, 0.761905, 0);
-		glVertex3d(-0.042857, 0.404762, 0);
-		glColor3d(color(21), color(21), color(21));
-		glVertex3d(0.685714, 0.761905, 0);
-		glVertex3d(0.285714, -1.000000, 0);
-		glVertex3d(-0.042857, 0.404762, 0);
-		glColor3d(color(21), color(21), color(21));
-		glVertex3d(0.685714, 0.761905, 0);
-		glVertex3d(0.800000, -0.285714, 0);
-		glVertex3d(0.285714, -1.000000, 0);
-		glColor3d(color(21), color(21), color(21));
-		glVertex3d(-0.785714, -0.285714, 0);
-		glVertex3d(-0.042857, 0.404762, 0);
-		glVertex3d(-0.457143, -0.452381, 0);
-		glColor3d(color(21), color(21), color(21));
-		glVertex3d(-0.457143, -0.452381, 0);
-		glVertex3d(0.071429, -0.666667, 0);
-		glVertex3d(-0.242857, -1.000000, 0);
-		glColor3d(color(21), color(21), color(21));
-		glVertex3d(-0.785714, -0.285714, 0);
-		glVertex3d(-0.242857, -1.000000, 0);
-		glVertex3d(-0.457143, -0.452381, 0);
-		glColor3d(color(21), color(21), color(21));
-		glVertex3d(-0.785714, -0.285714, 0);
-		glVertex3d(-0.242857, 0.928571, 0);
-		glVertex3d(-0.042857, 0.404762, 0);
-		glEnd();
-		break;
-	case 6:
-		glBegin(GL_TRIANGLE_STRIP);
-		glColor3d(color(12), color(12), color(12));
-		glVertex3d(0.285714, -1.000000, 0);
-		glVertex3d(-0.042857, 0.404762, 0);
-		glVertex3d(0.800000, -0.285714, 0);
-		glColor3d(color(12), color(12), color(12));
-		glVertex3d(0.685714, 0.761905, 0);
-		glVertex3d(-0.042857, 0.404762, 0);
-		glVertex3d(-0.242857, 0.928571, 0);
-		glColor3d(color(12), color(12), color(12));
-		glVertex3d(-0.785714, -0.285714, 0);
-		glVertex3d(-0.042857, 0.404762, 0);
-		glVertex3d(-0.457143, -0.452381, 0);
-		glColor3d(color(12), color(12), color(12));
-		glVertex3d(-0.785714, -0.285714, 0);
-		glVertex3d(-0.242857, -1.000000, 0);
-		glVertex3d(0.071429, -0.666667, 0);
-		glEnd();
-		break;
-	case 7:
-		glBegin(GL_TRIANGLE_FAN);
-		glColor3d(color(18), color(18), color(18));
-		glVertex3d(-0.042857, 0.404762, 0);
-		glVertex3d(0.285714, -1.000000, 0);
-		glVertex3d(0.800000, -0.285714, 0);
-		glColor3d(color(18), color(18), color(18));
-		glVertex3d(0.685714, 0.761905, 0);
-		glColor3d(color(18), color(18), color(18));
-		glVertex3d(-0.242857, 0.928571, 0);
-		glColor3d(color(18), color(18), color(18));
-		glVertex3d(-0.785714, -0.285714, 0);
-		glColor3d(color(18), color(18), color(18));
-		glVertex3d(-0.457143, -0.452381, 0);
-		glEnd();
-		glBegin(GL_TRIANGLE_FAN);
-		glVertex3d(-0.457143, -0.452381, 0);
-		glVertex3d(0.071429, -0.666667, 0);
-		glVertex3d(-0.242857, -1.000000, 0);
-		glColor3d(color(18), color(18), color(18));
-		glVertex3d(-0.785714, -0.285714, 0);
-		glEnd();
+		glDrawArrays(GL_LINE_LOOP, 0, 7);
 		break;
 	case 8:
-		glBegin(GL_POLYGON);
-		for (int i = 0; i < 7; i++) {
-			glColor3d(color(21), color(21), color(21));
-			glVertex3d(sin(6.28 / 7 * i) / 2, cos(6.28 / 7 * i) / 2, 0); 	// первая точка
-		}
-		glEnd();
-		break;
-	case 14:
-		if (!flag)
-			flag = 5;
-	case 13:
-		if (!flag)
+		flag = 5;
+	case 7:
+		if (flag < 4)
 			flag = 4;
-	case 12:
-		if (!flag)
+	case 6:
+		if (flag < 3)
 			flag = 3;
-	case 11:
-		if (!flag)
+	case 5:
+		if (flag < 2)
 			flag = 2;
-	case 10:
-		if (!flag)
-			flag = 1;
-	case 9:
-		switch (flag)
-		{
-		case 1:
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			break;
-		case 2:
-			glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
-			break;
-		case 3:
-			glPolygonMode(GL_FRONT, GL_POINT);
-			break;
-		case 4:
-			glPolygonMode(GL_FRONT, GL_LINE);
-			break;
-		case 5:
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			break;
+	case 4:
+		glPushMatrix();
+		if(flag >= 2)
+			glScalef(0.09, 0.09, 0);
+		if (flag >= 3) {
+			glTranslatef(-5, 10, 0);
+			glScalef(3, 0.5, 0);
 		}
-		flag = 0;
-		glBegin(GL_POLYGON);
-		glColor3d(color(12), color(12), color(12));
-		glVertex3d(0.285714, -1.000000, 0);
-		glVertex3d(0.800000, -0.285714, 0);
-		glVertex3d(0.685714, 0.761905, 0);
-		glVertex3d(-0.042857, 0.404762, 0);
-		glEnd();
-		glBegin(GL_POLYGON);
-		glColor3d(color(12), color(12), color(12));
-		glVertex3d(-0.042857, 0.404762, 0);
-		glVertex3d(0.685714, 0.761905, 0);
-		glVertex3d(-0.242857, 0.928571, 0);
-		glVertex3d(-0.785714, -0.285714, 0);
-		glEnd();
-		glBegin(GL_POLYGON);
-		glColor3d(color(12), color(12), color(12));
-		glVertex3d(-0.785714, -0.285714, 0);
-		glVertex3d(-0.042857, 0.404762, 0);
-		glVertex3d(-0.457143, -0.452381, 0);
-		glVertex3d(-0.242857, -1.000000, 0);
-		glEnd();
-		glBegin(GL_POLYGON);
-		glColor3d(color(12), color(12), color(12));
-		glVertex3d(-0.457143, -0.452381, 0);
-		glVertex3d(0.071429, -0.666667, 0);
-		glVertex3d(-0.242857, -1.000000, 0);
-		glEnd();
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		glDrawArrays(GL_TRIANGLES, 7, 3);
+		glPopMatrix();
+		glPushMatrix();
+		if (flag >= 4) {
+			glScalef(0.15, 0.15, 0);
+			glTranslatef(-5, -5, 0);
+			glRotatef(45, 0, 0, 1);
+			glTranslatef(5, 5, 0);
+		}
+		glDrawArrays(GL_POLYGON, 10, 4);
+		glPopMatrix();
+		glPushMatrix();
+		if (flag < 3 && flag >= 2)
+			glScalef(0.09, 0.09, 0);
+		if (flag >= 5) {
+			glRotatef(-70, 0, 0, 1);
+		}
+		glDrawArrays(GL_LINES, 14, 2);
+		glPopMatrix();
+		break;
+	case 9:
+		glDrawArrays(GL_LINE_LOOP, 16, 3);
+		glRotatef(120, 0, 0, 1);
+		glDrawArrays(GL_LINE_LOOP, 16, 3);
+		glRotatef(120, 0, 0, 1);
+		glDrawArrays(GL_LINE_LOOP, 16, 3);
+		glLoadIdentity();
 		break;
 	default:
-		glBegin(GL_POLYGON);
-		glColor3d(color(12), color(12), color(12));
-		glVertex3d(0.285714, -1.000000, 0);
-		glVertex3d(0.800000, -0.285714, 0);
-		glVertex3d(0.685714, 0.761905, 0);
-		glVertex3d(-0.042857, 0.404762, 0);
-		glEnd();
+		scene = 0;
+		flag = 1;
 		break;
 	}
+	glDisableClientState(GL_VERTEX_ARRAY);
 }
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
