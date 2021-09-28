@@ -4,8 +4,10 @@
 #include <gl/GL.h>
 #include <gl/GLU.h>
 #include <gl/glut.h>
-#define N 20
-#define COLORS 30
+#include <random>
+#define N 56
+#define COLORS 59
+int woo = 1;
 
 static HGLRC hRC;
 // Постоянный контекст рендеринга
@@ -35,8 +37,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	wc.hbrBackground = NULL;
 	wc.lpszMenuName = NULL;
 	wc.lpszClassName = L"OpenGL WinClass";
-	int scene = 0;
-	static bool flag = false;
+	int scene = 3;
 
 	if (!RegisterClass(&wc))
 	{
@@ -82,7 +83,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	ShowWindow(hWnd, SW_SHOW);
 	UpdateWindow(hWnd);
 	SetFocus(hWnd);
-
+	static bool flag = false, flag1 = false, flag2 = false, flag3 = false;
 	while (1)
 	{
 		// Обработка всех сообщений
@@ -103,6 +104,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			flag = false;
 			scene++;
 		}
+		if (keys[VK_LEFT]) flag1 = true;
+		if (!keys[VK_LEFT] && flag1) {
+			flag1 = false;
+			scene--;
+		}
+		if (keys[VK_UP])/* flag2 = true;
+		if (!keys[VK_UP] && flag2) {
+			flag2 = false;*/
+			woo += 50;
+		//}
+		if (keys[VK_DOWN]) /*flag3 = true;
+		if (!keys[VK_DOWN] && flag3) {
+			flag3 = false;*/
+			woo -= 50;
+		//}
 		DrawGLScene(scene);		// Нарисовать сцену
 		SwapBuffers(hDC);	// Переключить буфер экрана
 		if (keys[VK_ESCAPE]) SendMessage(hWnd, WM_CLOSE, 0, 0);
@@ -126,6 +142,8 @@ GLvoid ReSizeGLScene(GLsizei Width, GLsizei Height)
 
 double color(int pr)
 {
+	if(pr < 0)
+		return static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
 	static double re[30];
 	static bool once = false;
 	static int iteration = 0;
@@ -139,46 +157,164 @@ double color(int pr)
 	return re[iteration++];
 }
 
+int index(int x, int y) {
+	return x + y * 7;
+}
+
+typedef struct rgb
+{
+	float r;
+	float g;
+	float b;
+};
+
+GLvoid quantize(GLfloat b[][3], GLfloat start[][3])
+{
+	rgb error = {0, 0, 0};
+	for (int y = 1; y < 8; y++) {
+		for (int x = 0; x < 7; x++) {
+ 			b[index(x, y)][0] = (int)(start[index(x, y)][0] * 255.) / 255.;
+			b[index(x, y)][1] = (int)(start[index(x, y)][1] * 255.) / 255.;
+			b[index(x, y)][2] = (int)(start[index(x, y)][2] * 255.) / 255.;
+
+			error.r = start[index(x, y)][0] - b[index(x, y)][0];
+			error.g = start[index(x, y)][1] - b[index(x, y)][1];
+			error.b = start[index(x, y)][2] - b[index(x, y)][2];
+			if (x < 6) {
+				b[index(x + 1, y)][0] += error.r * 0.4375;
+				b[index(x + 1, y)][1] += error.g * 0.4375;
+				b[index(x + 1, y)][2] += error.b * 0.4375;
+			}
+			if (x >= 1 && y < 7) {
+				b[index(x - 1, y + 1)][0] += error.r * 0.1875;
+				b[index(x - 1, y + 1)][1] += error.g * 0.1875;
+				b[index(x - 1, y + 1)][2] += error.b * 0.1875;
+			}
+			if (y < 7) {
+				b[index(x, y + 1)][0] += error.r * 0.3125;
+				b[index(x, y + 1)][1] += error.g * 0.3125;
+				b[index(x, y + 1)][2] += error.b * 0.3125;
+			}
+			if(x < 6 && y < 7)
+			b[index(x + 1, y + 1)][0] += error.r * 0.0625;
+			b[index(x + 1, y + 1)][1] += error.g * 0.0625;
+			b[index(x + 1, y + 1)][2] += error.b * 0.0625;
+		}
+	}
+}
+
+GLvoid ez_quantize(GLfloat b[][3], GLfloat start[][3])
+{
+	rgb error = { 0, 0, 0 };
+	float max = 0;
+	int Mindex = 0;
+	for (int y = 1; y < 8; y++) {
+		for (int x = 0; x < 7; x++) {
+			max = start[index(x, y)][0];
+			Mindex = 0;
+			if (start[index(x, y)][1] > max) {
+				max = start[index(x, y)][1];
+				Mindex = 1;
+			}
+			if (start[index(x, y)][2] > max) {
+				max = start[index(x, y)][2];
+				Mindex = 2;
+			}
+			switch (Mindex) {
+			case 0: 
+				b[index(x, y)][0] = 255;
+				b[index(x, y)][1] = 0;
+				b[index(x, y)][2] = 0;
+				break;
+			case 1:
+				b[index(x, y)][0] = 0;
+				b[index(x, y)][1] = 255;
+				b[index(x, y)][2] = 0;
+				break;
+			case 2:
+				b[index(x, y)][0] = 0;
+				b[index(x, y)][1] = 0;
+				b[index(x, y)][2] = 255;
+				break;
+
+			}
+			//error.r = start[index(x, y)][0] - b[index(x, y)][0];
+			//error.g = start[index(x, y)][1] - b[index(x, y)][1];
+			//error.b = start[index(x, y)][2] - b[index(x, y)][2];
+			//if (x < 6) {
+			//	b[index(x + 1, y)][0] += error.r * 0.4375;
+			//	b[index(x + 1, y)][1] += error.g * 0.4375;
+			//	b[index(x + 1, y)][2] += error.b * 0.4375;
+			//}
+			//if (x >= 1 && y < 7) {
+			//	b[index(x - 1, y + 1)][0] += error.r * 0.1875;
+			//	b[index(x - 1, y + 1)][1] += error.g * 0.1875;
+			//	b[index(x - 1, y + 1)][2] += error.b * 0.1875;
+			//}
+			//if (y < 7) {
+			//	b[index(x, y + 1)][0] += error.r * 0.3125;
+			//	b[index(x, y + 1)][1] += error.g * 0.3125;
+			//	b[index(x, y + 1)][2] += error.b * 0.3125;
+			//}
+			//if (x < 6 && y < 7)
+			//	b[index(x + 1, y + 1)][0] += error.r * 0.0625;
+			//b[index(x + 1, y + 1)][1] += error.g * 0.0625;
+			//b[index(x + 1, y + 1)][2] += error.b * 0.0625;
+		}
+	}
+}
+
+
 void arrayFill(GLfloat a[][3], GLfloat b[][3])
 {
 	int i = 0;
-	for (i = 0; i < 7; i++) {
-		a[i][0] = sin(6.28 / 7 * i);
-		a[i][1] = cos(6.28 / 7 * i);
+	float theta, scale;
+	for (int i = 0; i < 7; i++){
+		theta = (i * 60 + rand() % 50) * 3.14 / 180;
+		scale = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+		a[i][0] = sin(theta) * scale;
+		a[i][1] = cos(theta) * scale;
 	}
-	a[7][0] = -0.913636;
-	a[7][1] = -0.657143;
-	a[8][0] = -0.745455;
-	a[8][1] = 0.074286;
-	a[9][0] = -0.577273;
-	a[9][1] = -0.657143;
-	a[10][0] = -0.454545;
-	a[10][1] = 0.074286;
-	a[11][0] = 0.340909;
-	a[11][1] = 0.074286;
-	a[12][0] = 0.340909;
-	a[12][1] = -0.657143;
-	a[13][0] = -0.454545;
-	a[13][1] = -0.657143;
-	a[14][0] = 0.522727;
-	a[14][1] = -0.291429;
-	a[15][0] = 0.943182;
-	a[15][1] = -0.291429;
-	a[16][0] = 0;
-	a[16][1] = 0;
-	a[17][0] = -1;
-	a[17][1] = 0;
-	a[18][0] = -0.5;
-	a[18][1] = -0.87;
-
-
-
-	for (int i = 0; i < COLORS; i++)
+	for (int i = 1; i < 8; i++)
+		for (int k = 7 * i; k < 14 * i; k++)
+			{
+				a[k][0] = -0.766 + 0.043 * (k - 7. * i);
+				a[k][1] = 0.8 - 0.05 * i;
+			}
+	for (int i = 0; i < 7; i++)
 	{
-		b[i][0] = color(30);
-		b[i][1] = color(30);
-		b[i][2] = color(30);
+		b[i][0] = color(-1);
+		b[i][1] = color(-1);
+		b[i][2] = color(-1);
 	}
+	for (int i = 7; i < COLORS; i++)
+	{
+		b[i][0] = color(-1);
+		b[i][1] = color(-1);
+		b[i][2] = color(-1);
+	}
+
+}
+
+GLvoid move(GLfloat a[][3])
+{
+	static int it = 0;
+	if (!it){
+		for (int i = 0; i < N; i++)
+			a[i][0] += .5;
+		it++;
+	}
+	else if(it == 1){
+		for (int i = 0; i < N; i++)
+			a[i][0] += .5;
+		it++;
+	}
+	else {
+		for (int i = 0; i < N; i++)
+			a[i][0] -= 1;
+		it = 0;
+	}
+
 }
 
 GLvoid DrawGLScene(int& scene)
@@ -186,13 +322,15 @@ GLvoid DrawGLScene(int& scene)
 	static int flag = 0;
 	srand(time(NULL));
 	glClear(GL_COLOR_BUFFER_BIT);
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_COLOR_ARRAY);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glLineWidth(5);
-	glMatrixMode(GL_MODELVIEW);
-	static GLfloat aVertex[N][3], aColor[COLORS][3];
-
+	static std::random_device rd; // obtain a random number from hardware
+	static std::mt19937 gen(rd()); // seed the generator
+	static std::uniform_int_distribution<> distr(50, 1000); // define the range
+	static std::uniform_int_distribution<> distr1(10, 35); // define the range
+	static std::uniform_real_distribution<double> unif(0., 1.);
+	static std::uniform_real_distribution<double> dif(0., 0.9);
+	static GLfloat aVertex[N][3], aColor[COLORS][3], ditherCA[COLORS][3];
+	static POINT prev = { 0, 0 }, cur = { 0, 0 };
+	float scale = 0.5;
 	if (!flag)
 	{
 		arrayFill(aVertex, aColor);
@@ -200,102 +338,74 @@ GLvoid DrawGLScene(int& scene)
 	}
  	glVertexPointer(3, GL_FLOAT, 0, aVertex);
 	glColorPointer(3, GL_FLOAT, 0, aColor);
+
 	switch (scene)
 	{
 	case 0:
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_COLOR_ARRAY);
 		glLoadIdentity();
-		glDrawArrays(GL_POLYGON, 0, 7);
-		break;
-	case 1:
-		glBegin(GL_POLYGON);
-		glArrayElement(1);
-		glArrayElement(2);
-		glArrayElement(5);
-		glArrayElement(6);
-		glEnd();
-		glBegin(GL_POLYGON);
-		glArrayElement(0);
-		glArrayElement(6);
-		glArrayElement(3);
-		glArrayElement(2);
-		glEnd();
-		glBegin(GL_POLYGON);
-		glArrayElement(0);
-		glArrayElement(1);
-		glArrayElement(4);
-		glArrayElement(5);
-		glEnd();
-		glBegin(GL_POLYGON);
-		glArrayElement(6);
-		glArrayElement(1);
-		glArrayElement(3);
-		glArrayElement(4);
-		glEnd();
+		glPointSize(10);
+		glEnable(GL_POINT_SMOOTH);
+		glDrawArrays(GL_POINTS, 0, 7);
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableClientState(GL_COLOR_ARRAY);
 		break;
 	case 2:
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 7);
-		glBegin(GL_TRIANGLES);
-		glArrayElement(5);
-		glArrayElement(6);
-		glArrayElement(0);
-		glEnd();
-		break;
-	case 3:
-		glDrawArrays(GL_LINE_LOOP, 0, 7);
-		break;
-	case 8:
-		flag = 5;
-	case 7:
-		if (flag < 4)
-			flag = 4;
-	case 6:
-		if (flag < 3)
-			flag = 3;
-	case 5:
-		if (flag < 2)
+ 		GetCursorPos(&cur);
+		if ((cur.x != prev.x) || (cur.y != prev.y)) {
+			prev = cur;
 			flag = 2;
-	case 4:
-		glPushMatrix();
-		if(flag >= 2)
-			glScalef(0.09, 0.09, 0);
-		if (flag >= 3) {
-			glTranslatef(-5, 10, 0);
-			glScalef(3, 0.5, 0);
 		}
-		glDrawArrays(GL_TRIANGLES, 7, 3);
-		glPopMatrix();
-		glPushMatrix();
-		if (flag >= 4) {
-			glScalef(0.15, 0.15, 0);
-			glTranslatef(-5, -5, 0);
-			glRotatef(45, 0, 0, 1);
-			glTranslatef(5, 5, 0);
+		if (flag == 2)
+		{
+			flag = 1;
 		}
-		glDrawArrays(GL_POLYGON, 10, 4);
-		glPopMatrix();
-		glPushMatrix();
-		if (flag < 3 && flag >= 2)
-			glScalef(0.09, 0.09, 0);
-		if (flag >= 5) {
-			glRotatef(-70, 0, 0, 1);
+		else {
+			glClear(GL_COLOR_BUFFER_BIT);
+			break;
 		}
-		glDrawArrays(GL_LINES, 14, 2);
-		glPopMatrix();
+	case 1:
+		for (int i = 0; i < 7; i++) {
+			glColor3d(unif(gen), unif(gen), unif(gen));
+			glPointSize(distr1(gen));
+			scale = dif(gen);             //окрестность точки
+			glBegin(GL_POINTS);
+			glVertex3d(sin((i * 60 + distr(gen) % 50) * 3.14 / 180) * scale, cos((i * 60 + distr(gen) % 50) * 3.14 / 180) * scale, 0);
+			glEnd();
+		}
+		Sleep(100);
 		break;
-	case 9:
-		glDrawArrays(GL_LINE_LOOP, 16, 3);
-		glRotatef(120, 0, 0, 1);
-		glDrawArrays(GL_LINE_LOOP, 16, 3);
-		glRotatef(120, 0, 0, 1);
-		glDrawArrays(GL_LINE_LOOP, 16, 3);
-		glLoadIdentity();
+	case 4:
+		glDisable(GL_POINT_SMOOTH);
+		glPointSize(14);
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_COLOR_ARRAY);
+		ez_quantize(ditherCA, aColor);
+		glColorPointer(3, GL_FLOAT, 0, ditherCA);
+		move(aVertex);
+		glDrawArrays(GL_POINTS, 7, 49);
+		move(aVertex);
+		quantize(ditherCA, aColor);
+		glDrawArrays(GL_POINTS, 7, 49);
+		move(aVertex);
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableClientState(GL_COLOR_ARRAY);
+	case 3:
+		glDisable(GL_POINT_SMOOTH);
+		glPointSize(14);
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_COLOR_ARRAY);
+		glColorPointer(3, GL_FLOAT, 0, aColor);
+		glDrawArrays(GL_POINTS, 7, 49);
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableClientState(GL_COLOR_ARRAY);
 		break;
 	default:
 		scene = 0;
 		flag = 1;
 		break;
 	}
-	glDisableClientState(GL_VERTEX_ARRAY);
 }
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
