@@ -4,6 +4,10 @@
 #include <gl/GL.h>
 #include <gl/GLU.h>
 #include <gl/glut.h>
+#include <random>
+#define N 100
+#define COLORS 59
+int woo = 1;
 
 static HGLRC hRC;
 // Постоянный контекст рендеринга
@@ -11,6 +15,11 @@ static HDC hDC;
 // Приватный контекст устройства GDI
 BOOL keys[256];
 // Массив для процедуры обработки клавиатуры
+
+typedef struct POINTF {
+	float x;
+	float y;
+};
 
 GLvoid InitGL(GLsizei Width, GLsizei Height);
 GLvoid ReSizeGLScene(GLsizei Width, GLsizei Height);
@@ -34,7 +43,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	wc.lpszMenuName = NULL;
 	wc.lpszClassName = L"OpenGL WinClass";
 	int scene = 0;
-	static bool flag = false;
 
 	if (!RegisterClass(&wc))
 	{
@@ -144,220 +152,292 @@ double color(int pr)
 
 GLvoid DrawGLScene(int& scene)
 {
+	float r;
+	float g;
+	float b;
+};
+
+GLvoid quantize(GLfloat b[][3], GLfloat start[][3])
+{
+	rgb error = {0, 0, 0};
+	for (int y = 1; y < 8; y++) {
+		for (int x = 0; x < 7; x++) {
+			if((int)(start[index(x, y)][0] * 255. / woo) / 255. * woo)
+ 				b[index(x, y)][0] = (int)(start[index(x, y)][0] * 255. / woo) / 255. * woo;
+			if ((int)(start[index(x, y)][1] * 255. / woo) / 255. * woo)
+				b[index(x, y)][1] = (int)(start[index(x, y)][1] * 255. / woo) / 255. * woo;
+			if ((int)(start[index(x, y)][2] * 255. / woo) / 255. * woo)
+				b[index(x, y)][2] = (int)(start[index(x, y)][2] * 255. / woo) / 255. * woo;
+
+			error.r = start[index(x, y)][0] - b[index(x, y)][0];
+			error.g = start[index(x, y)][1] - b[index(x, y)][1];
+			error.b = start[index(x, y)][2] - b[index(x, y)][2];
+			if (x < 6) {
+				b[index(x + 1, y)][0] += error.r * 0.4375;
+				b[index(x + 1, y)][1] += error.g * 0.4375;
+				b[index(x + 1, y)][2] += error.b * 0.4375;
+			}
+			if (x >= 1 && y < 7) {
+				b[index(x - 1, y + 1)][0] += error.r * 0.1875;
+				b[index(x - 1, y + 1)][1] += error.g * 0.1875;
+				b[index(x - 1, y + 1)][2] += error.b * 0.1875;
+			}
+			if (y < 7) {
+				b[index(x, y + 1)][0] += error.r * 0.3125;
+				b[index(x, y + 1)][1] += error.g * 0.3125;
+				b[index(x, y + 1)][2] += error.b * 0.3125;
+			}
+			if(x < 6 && y < 7)
+			b[index(x + 1, y + 1)][0] += error.r * 0.0625;
+			b[index(x + 1, y + 1)][1] += error.g * 0.0625;
+			b[index(x + 1, y + 1)][2] += error.b * 0.0625;
+		}
+	}
+}
+
+GLvoid ez_quantize(GLfloat b[][3], GLfloat start[][3])
+{
+	rgb error = { 0, 0, 0 };
+	float max = 0;
+	int Mindex = 0;
+	for (int y = 1; y < 8; y++) {
+		for (int x = 0; x < 7; x++) {
+			max = start[index(x, y)][0];
+			Mindex = 0;
+			if (start[index(x, y)][1] > max) {
+				max = start[index(x, y)][1];
+				Mindex = 1;
+			}
+			if (start[index(x, y)][2] > max) {
+				max = start[index(x, y)][2];
+				Mindex = 2;
+			}
+			switch (Mindex) {
+			case 0: 
+				b[index(x, y)][0] = 255;
+				b[index(x, y)][1] = 0;
+				b[index(x, y)][2] = 0;
+				break;
+			case 1:
+				b[index(x, y)][0] = 0;
+				b[index(x, y)][1] = 255;
+				b[index(x, y)][2] = 0;
+				break;
+			case 2:
+				b[index(x, y)][0] = 0;
+				b[index(x, y)][1] = 0;
+				b[index(x, y)][2] = 255;
+				break;
+
+			}
+			error.r = start[index(x, y)][0] - b[index(x, y)][0];
+			error.g = start[index(x, y)][1] - b[index(x, y)][1];
+			error.b = start[index(x, y)][2] - b[index(x, y)][2];
+			if (x < 6) {
+				b[index(x + 1, y)][0] += error.r * 0.4375;
+				b[index(x + 1, y)][1] += error.g * 0.4375;
+				b[index(x + 1, y)][2] += error.b * 0.4375;
+			}
+			if (x >= 1 && y < 7) {
+				b[index(x - 1, y + 1)][0] += error.r * 0.1875;
+				b[index(x - 1, y + 1)][1] += error.g * 0.1875;
+				b[index(x - 1, y + 1)][2] += error.b * 0.1875;
+			}
+			if (y < 7) {
+				b[index(x, y + 1)][0] += error.r * 0.3125;
+				b[index(x, y + 1)][1] += error.g * 0.3125;
+				b[index(x, y + 1)][2] += error.b * 0.3125;
+			}
+			if (x < 6 && y < 7)
+				b[index(x + 1, y + 1)][0] += error.r * 0.0625;
+			b[index(x + 1, y + 1)][1] += error.g * 0.0625;
+			b[index(x + 1, y + 1)][2] += error.b * 0.0625;
+		}
+	}
+}
+
+void toRel(POINTF &p)
+{
+	if (p.x == 0) {}
+	if (p.y == 0) {}
+	int w = 320, h = 240;
+	if (p.x > w)
+		p.x = (p.x - w) / w;
+	else if (!p.x){}
+	else p.x = -(w - p.x) / w;
+	if (p.y > h)
+		p.y = -(p.y - h) / h;
+	else if (!p.y) {}
+	else p.y = (h - p.y) / h;
+}
+
+void refill(GLfloat a[][3], POINTF p)
+{
+	static std::random_device rd; // obtain a random number from hardware
+	static std::mt19937 gen(rd()); // seed the generator
+	static std::uniform_real_distribution<double> distr(0.1, 0.5);
+	static std::uniform_int_distribution<> distr1(0, 359); // define the range
+	toRel(p);
+	for (int i = 56; i < N; i++)
+	{
+		a[i][0] = p.x + sin((distr1(gen)) * 3.14 / 180) * distr(gen);
+		a[i][1] = p.y + cos((distr1(gen)) * 3.14 / 180) * distr(gen);
+	}
+}
+
+
+void arrayFill(GLfloat a[][3], GLfloat b[][3])
+{
+	int i = 0;
+	float theta, scale;
+	for (int i = 0; i < 7; i++){
+		theta = (i * 60 + rand() % 50) * 3.14 / 180;
+		scale = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+		a[i][0] = sin(theta) * scale;
+		a[i][1] = cos(theta) * scale;
+	}
+	for (int i = 1; i < 8; i++)
+		for (int k = 7 * i; k < 14 * i; k++)
+		{
+			a[k][0] = -0.766 + 0.043 * (k - 7. * i);
+			a[k][1] = 0.8 - 0.05 * i;
+		}
+	for (int i = 0; i < 7; i++)
+	{
+		b[i][0] = color(-1);
+		b[i][1] = color(-1);
+		b[i][2] = color(-1);
+	}
+	for (int i = 7; i < COLORS; i++)
+	{
+		b[i][0] = color(-1);
+		b[i][1] = color(-1);
+		b[i][2] = color(-1);
+	}
+}
+
+GLvoid move(GLfloat a[][3])
+{
+	static int it = 0;
+	if (!it){
+		for (int i = 0; i < N; i++)
+			a[i][0] += .5;
+		it++;
+	}
+	else if(it == 1){
+		for (int i = 0; i < N; i++)
+			a[i][0] += .5;
+		it++;
+	}
+	else {
+		for (int i = 0; i < N; i++)
+			a[i][0] -= 1;
+		it = 0;
+	}
+
+}
+
+GLvoid DrawGLScene(int& scene)
+{
 	static int flag = 0;
 	srand(time(NULL));
 	glClear(GL_COLOR_BUFFER_BIT);
-	if (scene > 17)
-		scene = 0;
-	switch (scene) {
+	static std::random_device rd; // obtain a random number from hardware
+	static std::mt19937 gen(rd()); // seed the generator
+	static std::uniform_int_distribution<> distr(50, 1000); // define the range
+	static std::uniform_int_distribution<> distr1(10, 35); // define the range
+	static std::uniform_real_distribution<double> unif(0., 1.);
+	static std::uniform_real_distribution<double> dif(0., 0.9);
+	static GLfloat aVertex[N][3], aColor[COLORS][3], ditherCA[COLORS][3];
+	static POINT prev = { 0, 0 }, cur = { 0, 0 };
+	static POINTF p = { 0 , 0 }; 
+	float scale = 0.5;
+	if (!flag)
+	{
+		arrayFill(aVertex, aColor);
+		refill(aVertex, {0, 0.001});
+		flag = 1;
+	}
+ 	glVertexPointer(3, GL_FLOAT, 0, aVertex);
+	glColorPointer(3, GL_FLOAT, 0, aColor);
+
+	switch (scene)
+	{
 	case 0:
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_COLOR_ARRAY);
+		glLoadIdentity();
+		glPointSize(10);
 		glEnable(GL_POINT_SMOOTH);
-		glPointSize(12);  //размер точки
-		glBegin(GL_POINTS);
-		glColor3d(1, 0, 0);
-		for (int i = 0; i < 7; i++) {
-			glVertex3d(sin(6.28 / 7 * i) / 2, cos(6.28 / 7 * i) / 2, 0);
-		}
-		glEnd();
-		break;
-	case 1:
-		glEnable(GL_LINE_STIPPLE);
-		glLineWidth(22);
-		glLineStipple(1, 0x0FFF);
-		glBegin(GL_LINE_LOOP);
-		for (int i = 0; i < 7; i++) {
-			glVertex3d(sin(6.28 / 7 * i) / 2, cos(6.28 / 7 * i) / 2, 0); 	// первая точка
-		}
-		glLineStipple(1, 0x0AAA);
-		glDisable(GL_LINE_STIPPLE);
-		glEnd();
-		glLineStipple(1, 0xFFFF);
+		glDrawArrays(GL_POINTS, 0, 7);
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableClientState(GL_COLOR_ARRAY);
 		break;
 	case 2:
-		glEnable(GL_LINE_SMOOTH);
-		glLineWidth(12);  //размер точки
-		glBegin(GL_LINE_LOOP);
-		glColor3d(1, 0, 0);
-		for (int i = 0; i < 7; i++) {
-			glVertex3d(sin(6.28 / 7 * i) / 2, cos(6.28 / 7 * i) / 2, 0); 	// первая точка
+ 		GetCursorPos(&cur);
+		if ((cur.x != prev.x) || (cur.y != prev.y)) {
+			prev = cur;
+			flag = 2;
 		}
-		glEnd();
-		break;
-	case 3:
-		glEnable(GL_LINE_SMOOTH);
-		glLineWidth(1);  //размер точки
-		glLineStipple(1, 0xFFFF);
-		glBegin(GL_LINE_STRIP);
-		glVertex3d(-0.814286, 0.523810, 0);
-		glVertex3d(-0.557143, -0.690476, 0);
-		glVertex3d(-0.328571, -0.071429, 0);
-		glVertex3d(0.171429, -0.071429, 0);
-		glVertex3d(0.057143, 0.738095, 0);
-		glVertex3d(0.914286, 0.738095, 0);
-		glVertex3d(0.171429, -0.904762, 0);
-		glEnd();
+		if (flag == 2)
+		{
+			flag = 1;
+		}
+		else {
+			glClear(GL_COLOR_BUFFER_BIT);
+			break;
+		}
+	case 1:
+		for (int i = 0; i < 7; i++) {
+			glColor3d(unif(gen), unif(gen), unif(gen));
+			glPointSize(distr1(gen));
+			scale = dif(gen);             //окрестность точки
+			glBegin(GL_POINTS);
+			glVertex3d(sin((i * 60 + distr(gen) % 50) * 3.14 / 180) * scale, cos((i * 60 + distr(gen) % 50) * 3.14 / 180) * scale, 0);
+			glEnd();
+		}
+		Sleep(100);
 		break;
 	case 4:
-		glBegin(GL_LINE_LOOP);
-		glVertex3d(-0.548571, 0.514286, 0);
-		glVertex3d(0.800000, 0.514286, 0);
-		glVertex3d(0.274286, 0.000000, 0);
-		glVertex3d(0.274286, -0.685714, 0);
-		glVertex3d(0.685714, -0.685714, 0);
-		glVertex3d(0.685714, -0.914286, 0);
-		glVertex3d(-0.354286, -0.914286, 0);
-		glVertex3d(0.057143, -0.342857, 0);
-		glEnd();
-		break;
-	case 5:
-		glBegin(GL_TRIANGLES);
-		glVertex3d(-0.042857, 0.404762, 0);
-		glVertex3d(-0.242857, 0.928571, 0);
-		glVertex3d(-0.042857, 0.404762, 0);
-		glColor3d(color(21), color(21), color(21));
-		glVertex3d(-0.242857, 0.928571, 0);
-		glVertex3d(0.685714, 0.761905, 0);
-		glVertex3d(-0.042857, 0.404762, 0);
-		glColor3d(color(21), color(21), color(21));
-		glVertex3d(0.685714, 0.761905, 0);
-		glVertex3d(0.285714, -1.000000, 0);
-		glVertex3d(-0.042857, 0.404762, 0);
-		glColor3d(color(21), color(21), color(21));
-		glVertex3d(0.685714, 0.761905, 0);
-		glVertex3d(0.800000, -0.285714, 0);
-		glVertex3d(0.285714, -1.000000, 0);
-		glColor3d(color(21), color(21), color(21));
-		glVertex3d(-0.785714, -0.285714, 0);
-		glVertex3d(-0.042857, 0.404762, 0);
-		glVertex3d(-0.457143, -0.452381, 0);
-		glColor3d(color(21), color(21), color(21));
-		glVertex3d(-0.457143, -0.452381, 0);
-		glVertex3d(0.071429, -0.666667, 0);
-		glVertex3d(-0.242857, -1.000000, 0);
-		glColor3d(color(21), color(21), color(21));
-		glVertex3d(-0.785714, -0.285714, 0);
-		glVertex3d(-0.242857, -1.000000, 0);
-		glVertex3d(-0.457143, -0.452381, 0);
-		glColor3d(color(21), color(21), color(21));
-		glVertex3d(-0.785714, -0.285714, 0);
-		glVertex3d(-0.242857, 0.928571, 0);
-		glVertex3d(-0.042857, 0.404762, 0);
-		glEnd();
+		glDisable(GL_POINT_SMOOTH);
+		glPointSize(14);
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_COLOR_ARRAY);
+		ez_quantize(ditherCA, aColor);
+		glColorPointer(3, GL_FLOAT, 0, ditherCA);
+		move(aVertex);
+		glDrawArrays(GL_POINTS, 7, 49);
+		move(aVertex);
+		quantize(ditherCA, aColor);
+		glDrawArrays(GL_POINTS, 7, 49);
+		move(aVertex);
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableClientState(GL_COLOR_ARRAY);
+	case 3:
+		glDisable(GL_POINT_SMOOTH);
+		glPointSize(14);
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_COLOR_ARRAY);
+		glColorPointer(3, GL_FLOAT, 0, aColor);
+		glDrawArrays(GL_POINTS, 7, 49);
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableClientState(GL_COLOR_ARRAY);
 		break;
 	case 6:
-		glBegin(GL_TRIANGLE_STRIP);
-		glColor3d(color(12), color(12), color(12));
-		glVertex3d(0.285714, -1.000000, 0);
-		glVertex3d(-0.042857, 0.404762, 0);
-		glVertex3d(0.800000, -0.285714, 0);
-		glColor3d(color(12), color(12), color(12));
-		glVertex3d(0.685714, 0.761905, 0);
-		glVertex3d(-0.042857, 0.404762, 0);
-		glVertex3d(-0.242857, 0.928571, 0);
-		glColor3d(color(12), color(12), color(12));
-		glVertex3d(-0.785714, -0.285714, 0);
-		glVertex3d(-0.042857, 0.404762, 0);
-		glVertex3d(-0.457143, -0.452381, 0);
-		glColor3d(color(12), color(12), color(12));
-		glVertex3d(-0.785714, -0.285714, 0);
-		glVertex3d(-0.242857, -1.000000, 0);
-		glVertex3d(0.071429, -0.666667, 0);
-		glEnd();
-		break;
-	case 7:
-		glBegin(GL_TRIANGLE_FAN);
-		glColor3d(color(18), color(18), color(18));
-		glVertex3d(-0.042857, 0.404762, 0);
-		glVertex3d(0.285714, -1.000000, 0);
-		glVertex3d(0.800000, -0.285714, 0);
-		glColor3d(color(18), color(18), color(18));
-		glVertex3d(0.685714, 0.761905, 0);
-		glColor3d(color(18), color(18), color(18));
-		glVertex3d(-0.242857, 0.928571, 0);
-		glColor3d(color(18), color(18), color(18));
-		glVertex3d(-0.785714, -0.285714, 0);
-		glColor3d(color(18), color(18), color(18));
-		glVertex3d(-0.457143, -0.452381, 0);
-		glEnd();
-		glBegin(GL_TRIANGLE_FAN);
-		glVertex3d(-0.457143, -0.452381, 0);
-		glVertex3d(0.071429, -0.666667, 0);
-		glVertex3d(-0.242857, -1.000000, 0);
-		glColor3d(color(18), color(18), color(18));
-		glVertex3d(-0.785714, -0.285714, 0);
-		glEnd();
-		break;
-	case 8:
-		glBegin(GL_POLYGON);
-		for (int i = 0; i < 7; i++) {
-			glColor3d(color(21), color(21), color(21));
-			glVertex3d(sin(6.28 / 7 * i) / 2, cos(6.28 / 7 * i) / 2, 0); 	// первая точка
-		}
-		glEnd();
-		break;
-	case 14:
-		if (!flag)
-			flag = 5;
-	case 13:
-		if (!flag)
-			flag = 4;
-	case 12:
-		if (!flag)
-			flag = 3;
-	case 11:
-		if (!flag)
-			flag = 2;
-	case 10:
-		if (!flag)
-			flag = 1;
-	case 9:
-		switch (flag)
-		{
-		case 1:
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			break;
-		case 2:
-			glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
-			break;
-		case 3:
-			glPolygonMode(GL_FRONT, GL_POINT);
-			break;
-		case 4:
-			glPolygonMode(GL_FRONT, GL_LINE);
-			break;
-		case 5:
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			break;
-		}
-		flag = 0;
-		glBegin(GL_POLYGON);
-		glColor3d(color(12), color(12), color(12));
-		glVertex3d(0.285714, -1.000000, 0);
-		glVertex3d(0.800000, -0.285714, 0);
-		glVertex3d(0.685714, 0.761905, 0);
-		glVertex3d(-0.042857, 0.404762, 0);
-		glEnd();
-		glBegin(GL_POLYGON);
-		glColor3d(color(12), color(12), color(12));
-		glVertex3d(-0.042857, 0.404762, 0);
-		glVertex3d(0.685714, 0.761905, 0);
-		glVertex3d(-0.242857, 0.928571, 0);
-		glVertex3d(-0.785714, -0.285714, 0);
-		glEnd();
-		glBegin(GL_POLYGON);
-		glColor3d(color(12), color(12), color(12));
-		glVertex3d(-0.785714, -0.285714, 0);
-		glVertex3d(-0.042857, 0.404762, 0);
-		glVertex3d(-0.457143, -0.452381, 0);
-		glVertex3d(-0.242857, -1.000000, 0);
-		glEnd();
-		glBegin(GL_POLYGON);
-		glColor3d(color(12), color(12), color(12));
-		glVertex3d(-0.457143, -0.452381, 0);
-		glVertex3d(0.071429, -0.666667, 0);
-		glVertex3d(-0.242857, -1.000000, 0);
-		glEnd();
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		GetCursorPos(&cur);
+		p.x = cur.x;
+		p.y = cur.y;
+		refill(aVertex, p);
+		glLineWidth(distr1(gen)%20);
+	case 5:
+		glEnable(GL_LINE_SMOOTH);
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_COLOR_ARRAY);
+		glColorPointer(3, GL_FLOAT, 0, aColor);
+		glDrawArrays(GL_LINES, 56, 44);
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableClientState(GL_COLOR_ARRAY);
+		Sleep(100);
 		break;
 	default:
 		glBegin(GL_POLYGON);
