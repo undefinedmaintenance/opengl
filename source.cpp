@@ -88,7 +88,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	ShowWindow(hWnd, SW_SHOW);
 	UpdateWindow(hWnd);
 	SetFocus(hWnd);
-
+	static bool flag = false, flag1 = false, flag2 = false, flag3 = false;
 	while (1)
 	{
 		// Обработка всех сообщений
@@ -109,6 +109,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			flag = false;
 			scene++;
 		}
+		if (keys[VK_LEFT]) flag1 = true;
+		if (!keys[VK_LEFT] && flag1) {
+			flag1 = false;
+			scene--;
+		}
+		if (keys[VK_UP])/* flag2 = true;
+		if (!keys[VK_UP] && flag2) {
+			flag2 = false;*/
+			woo += 50;
+		//}
+		if (keys[VK_DOWN]) /*flag3 = true;
+		if (!keys[VK_DOWN] && flag3) {
+			flag3 = false;*/
+			woo -= 50;
+		//}
 		DrawGLScene(scene);		// Нарисовать сцену
 		SwapBuffers(hDC);	// Переключить буфер экрана
 		if (keys[VK_ESCAPE]) SendMessage(hWnd, WM_CLOSE, 0, 0);
@@ -130,13 +145,10 @@ GLvoid ReSizeGLScene(GLsizei Width, GLsizei Height)
 	glViewport(0, 0, Width, Height); // Сброс текущей области вывода и перспективных преобразований
 }
 
-float randomCol(void)
-{
-	return static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-}
-
 double color(int pr)
 {
+	if (pr < 0)
+		return static_cast <double> (rand()) / static_cast <double> (RAND_MAX);
 	static double re[30];
 	static bool once = false;
 	static int iteration = 0;
@@ -150,7 +162,11 @@ double color(int pr)
 	return re[iteration++];
 }
 
-GLvoid DrawGLScene(int& scene)
+int index(int x, int y) {
+	return x + y * 7;
+}
+
+typedef struct rgb
 {
 	float r;
 	float g;
@@ -159,11 +175,11 @@ GLvoid DrawGLScene(int& scene)
 
 GLvoid quantize(GLfloat b[][3], GLfloat start[][3])
 {
-	rgb error = {0, 0, 0};
+	rgb error = { 0, 0, 0 };
 	for (int y = 1; y < 8; y++) {
 		for (int x = 0; x < 7; x++) {
-			if((int)(start[index(x, y)][0] * 255. / woo) / 255. * woo)
- 				b[index(x, y)][0] = (int)(start[index(x, y)][0] * 255. / woo) / 255. * woo;
+			if ((int)(start[index(x, y)][0] * 255. / woo) / 255. * woo)
+				b[index(x, y)][0] = (int)(start[index(x, y)][0] * 255. / woo) / 255. * woo;
 			if ((int)(start[index(x, y)][1] * 255. / woo) / 255. * woo)
 				b[index(x, y)][1] = (int)(start[index(x, y)][1] * 255. / woo) / 255. * woo;
 			if ((int)(start[index(x, y)][2] * 255. / woo) / 255. * woo)
@@ -187,8 +203,8 @@ GLvoid quantize(GLfloat b[][3], GLfloat start[][3])
 				b[index(x, y + 1)][1] += error.g * 0.3125;
 				b[index(x, y + 1)][2] += error.b * 0.3125;
 			}
-			if(x < 6 && y < 7)
-			b[index(x + 1, y + 1)][0] += error.r * 0.0625;
+			if (x < 6 && y < 7)
+				b[index(x + 1, y + 1)][0] += error.r * 0.0625;
 			b[index(x + 1, y + 1)][1] += error.g * 0.0625;
 			b[index(x + 1, y + 1)][2] += error.b * 0.0625;
 		}
@@ -213,7 +229,7 @@ GLvoid ez_quantize(GLfloat b[][3], GLfloat start[][3])
 				Mindex = 2;
 			}
 			switch (Mindex) {
-			case 0: 
+			case 0:
 				b[index(x, y)][0] = 255;
 				b[index(x, y)][1] = 0;
 				b[index(x, y)][2] = 0;
@@ -256,14 +272,14 @@ GLvoid ez_quantize(GLfloat b[][3], GLfloat start[][3])
 	}
 }
 
-void toRel(POINTF &p)
+void toRel(POINTF& p)
 {
 	if (p.x == 0) {}
 	if (p.y == 0) {}
 	int w = 320, h = 240;
 	if (p.x > w)
 		p.x = (p.x - w) / w;
-	else if (!p.x){}
+	else if (!p.x) {}
 	else p.x = -(w - p.x) / w;
 	if (p.y > h)
 		p.y = -(p.y - h) / h;
@@ -290,7 +306,7 @@ void arrayFill(GLfloat a[][3], GLfloat b[][3])
 {
 	int i = 0;
 	float theta, scale;
-	for (int i = 0; i < 7; i++){
+	for (int i = 0; i < 7; i++) {
 		theta = (i * 60 + rand() % 50) * 3.14 / 180;
 		scale = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 		a[i][0] = sin(theta) * scale;
@@ -319,12 +335,12 @@ void arrayFill(GLfloat a[][3], GLfloat b[][3])
 GLvoid move(GLfloat a[][3])
 {
 	static int it = 0;
-	if (!it){
+	if (!it) {
 		for (int i = 0; i < N; i++)
 			a[i][0] += .5;
 		it++;
 	}
-	else if(it == 1){
+	else if (it == 1) {
 		for (int i = 0; i < N; i++)
 			a[i][0] += .5;
 		it++;
@@ -350,15 +366,15 @@ GLvoid DrawGLScene(int& scene)
 	static std::uniform_real_distribution<double> dif(0., 0.9);
 	static GLfloat aVertex[N][3], aColor[COLORS][3], ditherCA[COLORS][3];
 	static POINT prev = { 0, 0 }, cur = { 0, 0 };
-	static POINTF p = { 0 , 0 }; 
+	static POINTF p = { 0 , 0 };
 	float scale = 0.5;
 	if (!flag)
 	{
 		arrayFill(aVertex, aColor);
-		refill(aVertex, {0, 0.001});
+		refill(aVertex, { 0, 0.001 });
 		flag = 1;
 	}
- 	glVertexPointer(3, GL_FLOAT, 0, aVertex);
+	glVertexPointer(3, GL_FLOAT, 0, aVertex);
 	glColorPointer(3, GL_FLOAT, 0, aColor);
 
 	switch (scene)
@@ -374,7 +390,7 @@ GLvoid DrawGLScene(int& scene)
 		glDisableClientState(GL_COLOR_ARRAY);
 		break;
 	case 2:
- 		GetCursorPos(&cur);
+		GetCursorPos(&cur);
 		if ((cur.x != prev.x) || (cur.y != prev.y)) {
 			prev = cur;
 			flag = 2;
@@ -428,7 +444,7 @@ GLvoid DrawGLScene(int& scene)
 		p.x = cur.x;
 		p.y = cur.y;
 		refill(aVertex, p);
-		glLineWidth(distr1(gen)%20);
+		glLineWidth(distr1(gen) % 20);
 	case 5:
 		glEnable(GL_LINE_SMOOTH);
 		glEnableClientState(GL_VERTEX_ARRAY);
@@ -440,13 +456,8 @@ GLvoid DrawGLScene(int& scene)
 		Sleep(100);
 		break;
 	default:
-		glBegin(GL_POLYGON);
-		glColor3d(color(12), color(12), color(12));
-		glVertex3d(0.285714, -1.000000, 0);
-		glVertex3d(0.800000, -0.285714, 0);
-		glVertex3d(0.685714, 0.761905, 0);
-		glVertex3d(-0.042857, 0.404762, 0);
-		glEnd();
+		scene = 0;
+		flag = 1;
 		break;
 	}
 }
