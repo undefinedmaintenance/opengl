@@ -122,17 +122,53 @@ GLvoid ReSizeGLScene(GLsizei Width, GLsizei Height)
 
 GLvoid DrawGLScene(GLvoid)
 {
-	glClear(GL_COLOR_BUFFER_BIT);
-	glEnable(GL_POINT_SMOOTH);
-	glPointSize(12);  //размер точки
-	glBegin(GL_POINTS);
-	glColor3d(1, 0, 0);
-	glVertex3d(-0.45, -0.4, 0); 	// первая точка
-	glColor3d(0, 1, 0);
-	glVertex3d(0.4, 0.4, 0);   	// вторая точка
-	glColor3d(0, 0, 1);
-	glVertex3d(-0.35, 0.4, 0); 	// третья точка
-	glEnd();
+	static float i = 0, j = 7, k = 0, ang = 0, size = 1;
+	GLUquadricObj* quadricObj = gluNewQuadric();
+	glMatrixMode(GL_PROJECTION);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	gluQuadricDrawStyle(quadricObj, GLU_LINE);
+	glEnable(GL_DEPTH_TEST);
+	glPushMatrix();
+
+	if (keys[VK_UP]) j -= .05;
+	if (keys[VK_DOWN]) j += .05;
+	if (keys[VK_RIGHT]) i += .05;
+	if (keys[VK_LEFT]) i -= .05;
+	if (keys[VK_F18]) k += .05;
+	if (keys[VK_F19]) k -= .05;
+	if (keys[VK_F16]) ang += 1;
+	if (keys[VK_F17]) ang -= 1;
+	if (keys[VK_F14]) size += .1;
+	if (keys[VK_F15]) size -= .1;
+	glRotatef(ang, 0., 1, 0.);
+	gluPerspective(40, 1, 5, 10);
+	glTranslatef(size * k, 0., 0.);
+	
+	gluLookAt(j*sin(i), j*cos(i), 0, 0, 0, 0, 0, 0, -1);
+	gluSphere(quadricObj, size * .239, 10, 10);		//sun
+	glTranslatef(size * .28, .0, .0);
+	gluSphere(quadricObj, size * .004, 10, 10);		//mercury
+	glTranslatef(size * .1, .0, .0);
+	gluSphere(quadricObj, size * .012, 10, 10);		//venus
+	glTranslatef(size * .1, .0, .0);
+	gluSphere(quadricObj, size * .0127, 10, 10);	//earth
+	glTranslatef(size * .1, .0, .0);
+	gluSphere(quadricObj, size * .006, 10, 10);		//mars
+	glTranslatef(size * .2, .0, .0);
+	gluSphere(quadricObj, size * .14, 10, 10);		//jupiter
+	glRotated(45, 1, 1, -1);
+	gluDisk(quadricObj, size * .17, size * .21, 10, 10);
+	glRotated(-45, 1, 1, -1);
+	glTranslatef(size * .32, .0, .0);
+	gluSphere(quadricObj, size * .116, 10, 10);		//saturn
+	glTranslatef(size * .2, .0, .0);
+	gluSphere(quadricObj, size * .0507, 10, 10);	//uranus
+	glTranslatef(size * .13, .0, .0);
+	gluSphere(quadricObj, size * .0492, 10, 10);	//neptune
+
+	glPopMatrix();
+	gluDeleteQuadric(quadricObj);
 }
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
