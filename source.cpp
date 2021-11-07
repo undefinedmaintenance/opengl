@@ -122,13 +122,32 @@ GLvoid ReSizeGLScene(GLsizei Width, GLsizei Height)
 
 GLvoid DrawGLScene(GLvoid)
 {
-	static float i = 0, j = 7, k = 0, ang = 0, size = 1;
+	static float i = 0, j = 0, k = 0, ang = 0, size = 1;
+	float ambient[4] = { 0.1, 0.4, 0.1, 1 };
+	GLfloat diffuse[3] = { 0, 0, 1 }, shininess[1] = { 79 }, lightpos[4] = { 0, 7, 8, 1}, lightdir[3] = { 0, -1, 1 };
 	GLUquadricObj* quadricObj = gluNewQuadric();
+
 	glMatrixMode(GL_PROJECTION);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnableClientState(GL_VERTEX_ARRAY);
-	gluQuadricDrawStyle(quadricObj, GLU_LINE);
+	gluQuadricDrawStyle(quadricObj, GLU_FILL);
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_LIGHTING);
+	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
+
+	glEnable(GL_LIGHT0);
+	glLightfv(GL_LIGHT0, GL_POSITION, lightpos);
+	glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, lightdir);
+	glEnable(GL_LIGHT1);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, new GLfloat[4]{ 0, 1, .2, 1 });
+	glLightfv(GL_LIGHT1, GL_POSITION, new GLfloat[4]{ -6, -6, 6, 1 });
+	glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, new GLfloat[3]{ 1, 1, -1 });
+	glEnable(GL_LIGHT2);
+	glLightfv(GL_LIGHT2, GL_DIFFUSE, new GLfloat[4]{ 0.3, 1, 0.7, 1 });
+	glLightfv(GL_LIGHT2, GL_POSITION, new GLfloat[4]{ 9, 0, 4, 1 });
+	glLightfv(GL_LIGHT2, GL_SPOT_CUTOFF, new GLfloat[1]{ 20 });
+	glLightfv(GL_LIGHT2, GL_SPOT_DIRECTION, new GLfloat[3]{ -1, 0, 0 });
 	glPushMatrix();
 
 	if (keys[VK_UP]) j -= .05;
@@ -141,31 +160,17 @@ GLvoid DrawGLScene(GLvoid)
 	if (keys[VK_F17]) ang -= 1;
 	if (keys[VK_F14]) size += .1;
 	if (keys[VK_F15]) size -= .1;
-	glRotatef(ang, 0., 1, 0.);
-	gluPerspective(40, 1, 5, 10);
-	glTranslatef(size * k, 0., 0.);
 	
-	gluLookAt(j*sin(i), j*cos(i), 0, 0, 0, 0, 0, 0, -1);
-	gluSphere(quadricObj, size * .239, 10, 10);		//sun
-	glTranslatef(size * .28, .0, .0);
-	gluSphere(quadricObj, size * .004, 10, 10);		//mercury
-	glTranslatef(size * .1, .0, .0);
-	gluSphere(quadricObj, size * .012, 10, 10);		//venus
-	glTranslatef(size * .1, .0, .0);
-	gluSphere(quadricObj, size * .0127, 10, 10);	//earth
-	glTranslatef(size * .1, .0, .0);
-	gluSphere(quadricObj, size * .006, 10, 10);		//mars
-	glTranslatef(size * .2, .0, .0);
-	gluSphere(quadricObj, size * .14, 10, 10);		//jupiter
-	glRotated(45, 1, 1, -1);
-	gluDisk(quadricObj, size * .17, size * .21, 10, 10);
-	glRotated(-45, 1, 1, -1);
-	glTranslatef(size * .32, .0, .0);
-	gluSphere(quadricObj, size * .116, 10, 10);		//saturn
-	glTranslatef(size * .2, .0, .0);
-	gluSphere(quadricObj, size * .0507, 10, 10);	//uranus
-	glTranslatef(size * .13, .0, .0);
-	gluSphere(quadricObj, size * .0492, 10, 10);	//neptune
+	gluPerspective(80, 1, 2, 100);
+	//glTranslatef(2, 7, -9);
+	gluLookAt(i, j, k, 0, 0, 0, 0, 0, -1);
+	//glTranslatef(i, j, k);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
+	gluSphere(quadricObj, 5, 50, 50);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
+	gluSphere(quadricObj, 5, 50, 50);
+	//glTranslatef(-2, -7, 9);
+	//glTranslatef(-i, -j, -k);
 
 	glPopMatrix();
 	gluDeleteQuadric(quadricObj);
