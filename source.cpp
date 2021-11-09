@@ -1,8 +1,13 @@
-#include <iostream>
+#include <fstream>
+#include <vector>
 #include <windows.h>
 #include <gl/GL.h>
 #include <gl/GLU.h>
 #include <gl/glut.h>
+
+#pragma warning (disable : 4996)
+
+GLuint texture;
 
 static HGLRC hRC;
 // Постоянный контекст рендеринга
@@ -15,8 +20,10 @@ GLvoid InitGL(GLsizei Width, GLsizei Height);
 GLvoid ReSizeGLScene(GLsizei Width, GLsizei Height);
 GLvoid DrawGLScene(GLvoid);
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+GLuint loadBMP_custom(const char* imagepath);
 
-int WINAPI WinMain(HINSTANCE hInstance,	HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	MSG			msg;	// Структура сообщения Windows
 	WNDCLASS	wc; 	// Структура класса Windows для установки типа окна
@@ -74,10 +81,11 @@ int WINAPI WinMain(HINSTANCE hInstance,	HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	// Режим Пикселя
 	//ChangeDisplaySettings(&dmScreenSettings, CDS_FULLSCREEN);
 	// Переключение в полный экран
-
 	ShowWindow(hWnd, SW_SHOW);
 	UpdateWindow(hWnd);
 	SetFocus(hWnd);
+	loadBMP_custom("C:\\a\\e.bmp");
+
 
 	while (1)
 	{
@@ -122,58 +130,55 @@ GLvoid ReSizeGLScene(GLsizei Width, GLsizei Height)
 
 GLvoid DrawGLScene(GLvoid)
 {
-	static float i = 0, j = 0, k = 0, ang = 0, size = 1;
-	float ambient[4] = { 0.1, 0.4, 0.1, 1 };
-	GLfloat diffuse[3] = { 0, 0, 1 }, shininess[1] = { 79 }, lightpos[4] = { 0, 7, 8, 1}, lightdir[3] = { 0, -1, 1 };
-	GLUquadricObj* quadricObj = gluNewQuadric();
-
-	glMatrixMode(GL_PROJECTION);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glEnableClientState(GL_VERTEX_ARRAY);
-	gluQuadricDrawStyle(quadricObj, GLU_FILL);
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_LIGHTING);
-	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
-	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
-
-	glEnable(GL_LIGHT0);
-	glLightfv(GL_LIGHT0, GL_POSITION, lightpos);
-	glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, lightdir);
-	glEnable(GL_LIGHT1);
-	glLightfv(GL_LIGHT1, GL_DIFFUSE, new GLfloat[4]{ 0, 1, .2, 1 });
-	glLightfv(GL_LIGHT1, GL_POSITION, new GLfloat[4]{ -6, -6, 6, 1 });
-	glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, new GLfloat[3]{ 1, 1, -1 });
-	glEnable(GL_LIGHT2);
-	glLightfv(GL_LIGHT2, GL_DIFFUSE, new GLfloat[4]{ 0.3, 1, 0.7, 1 });
-	glLightfv(GL_LIGHT2, GL_POSITION, new GLfloat[4]{ 9, 0, 4, 1 });
-	glLightfv(GL_LIGHT2, GL_SPOT_CUTOFF, new GLfloat[1]{ 20 });
-	glLightfv(GL_LIGHT2, GL_SPOT_DIRECTION, new GLfloat[3]{ -1, 0, 0 });
-	glPushMatrix();
-
-	if (keys[VK_UP]) j -= .05;
-	if (keys[VK_DOWN]) j += .05;
-	if (keys[VK_RIGHT]) i += .05;
-	if (keys[VK_LEFT]) i -= .05;
-	if (keys[VK_F18]) k += .05;
-	if (keys[VK_F19]) k -= .05;
-	if (keys[VK_F16]) ang += 1;
-	if (keys[VK_F17]) ang -= 1;
-	if (keys[VK_F14]) size += .1;
-	if (keys[VK_F15]) size -= .1;
+	glClear(GL_COLOR_BUFFER_BIT);
+	static float t = 5, i = 0.5, x = 0;
+	static bool flag = true;
 	
-	gluPerspective(80, 1, 2, 100);
-	//glTranslatef(2, 7, -9);
-	gluLookAt(i, j, k, 0, 0, 0, 0, 0, -1);
-	//glTranslatef(i, j, k);
-	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
-	gluSphere(quadricObj, 5, 50, 50);
-	glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
-	gluSphere(quadricObj, 5, 50, 50);
-	//glTranslatef(-2, -7, 9);
-	//glTranslatef(-i, -j, -k);
+	if (keys[VK_UP]) t += 1;
+	if (keys[VK_DOWN]) t -= 1;
+	if (keys[VK_RIGHT]) i += 0.1;
+	if (keys[VK_LEFT]) i -= 0.1;
+	if (keys[VK_F18]) x += 0.1;
+	if (keys[VK_F19]) x -= 0.1;
+	if (keys[VK_F17]) flag = flag ? false : true;
 
+	glEnable(GL_TEXTURE_2D);
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	//glEnable(GL_TEXTURE_GEN_S);
+	//glEnable(GL_TEXTURE_GEN_T);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D,	GL_TEXTURE_MAG_FILTER,	GL_NEAREST);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+	if (flag) {
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	}
+	else {
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		//i = 1 / 7.;
+	}
+
+	gluPerspective(80, 1, 2, 100);
+	glTranslatef(0, 0, -t);
+	glRotatef(x, 0, 0, 1);
+
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0, 0.0);
+	glVertex3f(-2, -2, 0); //левый нижний угол
+	glTexCoord2f(5.0 * i, 0.0 *i);
+	glVertex3f(3, -2, 0); //правый нижний угол
+	glTexCoord2f(7.0 * i, 4.0 * i);
+	glVertex3f(5, 2, 0); //правый верхний угол
+	glTexCoord2f(2.0 * i, 4.0 * i);
+	glVertex3f(0, 2, 0); //левый верхний угол
+	glEnd();
+
+	//glDisable(GL_TEXTURE_GEN_S);
+	//glDisable(GL_TEXTURE_GEN_T);
+	glDisable(GL_TEXTURE_2D);
 	glPopMatrix();
-	gluDeleteQuadric(quadricObj);
 }
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -274,4 +279,39 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	}
 
 	return (0);
+}
+
+std::vector<unsigned char> readFile(const char* path)
+{
+	std::ifstream file(path, std::ios::binary);
+	std::streampos size;
+	file.seekg(0, std::ios::end);
+	size = file.tellg();
+	file.seekg(0, std::ios::beg);
+	std::vector<unsigned char> data(size);
+	file.read((char*)&data[0], size);
+	return data;
+}
+
+GLuint loadBMP_custom(const char* imagepath)
+{
+	int width = 512;
+	int height = 512;
+	std::vector<unsigned char> data = readFile(imagepath);
+	for (int i = 0; i < width * height; ++i)
+	{
+		int index = i * 3;
+		unsigned char B, R;
+		B = data[index];
+		R = data[index + 2];
+
+		data[index] = R;
+		data[index + 2] = B;
+	}
+	unsigned char* set = &data[0];
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, 3, width, height,0, GL_RGB, GL_UNSIGNED_BYTE, set);
+	data.clear();
+	return texture;
 }
